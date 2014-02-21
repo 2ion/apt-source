@@ -1,7 +1,6 @@
 #!/usr/bin/env luajit
 
--- apt-source - command line interface to APT source.list files and
--- directories
+-- apt.lua - Lua library for manipulating APT source listings
 -- Copyright (C) 2014 Jens John (2ion) <dev!2ion!de>
 
 local APT = {}
