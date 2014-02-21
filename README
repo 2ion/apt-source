@@ -1,0 +1,5 @@
+Command line interface to Debian APT source listings, and directories of
+them.
+
+ATM this is under heavy development, but the core library is already
+usable. You have to wait for the CLI, though ^^
