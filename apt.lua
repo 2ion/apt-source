@@ -48,7 +48,7 @@ function APTSourceEntry:tostring()
   local suite = self.suite
   local components = self:tostring_components()
   return string.format("%s%s%s%s%s",
-    type and (self.is_off and "#"..type or type) or "",
+    type and (self.active and type or "#"..type) or "",
     options and string.format(" [ %s ] ", options) or " ",
     uri and uri .. " " or " ",
     suite and suite .. " " or " ",
@@ -169,7 +169,7 @@ end
 function APTSource:parse_line_options(e, elemlist)
   local t = {}
   for i,o in ipairs(elemlist) do
-    local k, vl = o.match("^([%w]+)=(%S+)$")
+    local k, vl = o:match("^([%w]+)=(%S+)$")
     if k then t[k] = {} end
     if vl then
       for value in vl:gmatch("[%S^,]+") do
