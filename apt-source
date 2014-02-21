@@ -4,7 +4,30 @@ local Posix = require "posix"
 local Apt = require "apt"
 local Tx = require "pl.tablex"
 
-local s = Apt.Source:init("./sources.list")
+local options_long = {
+  { "help", "none", "h" },
+  { "file", "required", "f" },
+  { "disable", "required", "d" },
+  { "enable", "required", "e" }
+}
+local options_short = "hf:d:e:"
 
-s:enum()
+local function help()
+  print([[apt-source
+Copyright (C) 2014 Jens Oliver John <dev at 2ion dot de>]])
+end
 
+local last_index = 1
+for r, optarg, optind, li in Posix.getopt(arg,
+  options_short, options_long) do
+  last_index = optindex
+  if r == '?' then
+    return print "Incorrect command line."
+  elseif r == 'h' then
+    return help()
+  elseif r == 'd' then
+    return
+  elseif r == 'e' then
+    return
+  end
+end

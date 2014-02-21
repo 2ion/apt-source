@@ -21,6 +21,11 @@ function APTSourceEntry:new(s_type, t_options,
   return o
 end
 
+function APTSourceEntry:apply(f)
+  f(self)
+  return self
+end
+
 function APTSourceEntry:enable()
   self.active = true
   return self.active
@@ -120,7 +125,7 @@ function APTSource:parse_line(line)
     local elem = elem
     if elem:match("^#deb") then
       elem = elem:sub(2, -1)
-      e.is_off = true
+      e.active = false
     end
     if nextIs=="type" then
       self:parse_line_type(e, elem)
@@ -231,18 +236,24 @@ end
 
 function APTSource:forsome_do(qt, f)
   local sel = self:select(qt)
-  for d,e in ipairs(sel) do f(e) end
+  for d,e in ipairs(sel) do e:apply(f) end
   return self
 end
 
 function APTSource:foreach_do(f)
-  for _,e in ipairs(self.entries) do f(e) end
+  for _,e in ipairs(self.entries) do e:apply(f) end
   return self
 end
 
 function APTSource:foreach_change(ct)
   for _,e in ipairs(self.entries) do e:change(ct) end
   return self
+end
+
+function APTSource:append(o)
+  for _,e in ipairs(o.entries) do
+    table.insert(self.entries, e)
+  end
 end
 
 return {
