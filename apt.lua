@@ -112,7 +112,12 @@ function APTSource:parse(path)
     end
   end
   io.close(fd)
+  self.ready = true
   return self
+end
+
+function APTSource:is_ready()
+  return self.ready
 end
 
 function APTSource:parse_line(line)
@@ -139,10 +144,13 @@ function APTSource:parse_line(line)
     elseif nextIs=="options-list" then
       if elem=="]" then
         self:parse_line_options(e, elemlist)
-        nextIs = "suite"
+        nextIs = "uri"
       else
         table.insert(elemlist, elem)
       end
+    elseif nextIs=="uri" then
+      self:parse_line_uri(e, elem)
+      nextIs="suite"
     elseif nextIs=="suite" then
       self:parse_line_suite(e, elem)
       nextIs = "component"

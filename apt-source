@@ -3,9 +3,44 @@
 local Posix = require "posix"
 local Apt = require "apt"
 local Tx = require "pl.tablex"
+local Sx = require "pl.stringx"
 
--- suite={"sid", "testing"}
--- @<filename>
+local CLIEnv = {
+  sid = "unstable",
+  unstable = "unstable",
+  experimental = "experimental",
+  testing = "testing",
+  wheezy = "stable",
+  stable = "stable",
+  jessie = "testing",
+  ["non-free"] = "non-free",
+  contrib = "contrib",
+  main = "main",
+  mirror = {}
+}
+
+local function extend_cli_env(sourcefile)
+  local source = Apt.Source:init(sourcefile)
+  if not source:is_ready() then
+    return nil
+  end
+  source:foreach_do(function (e)
+    -- import suite names
+    if not CLIEnv[e.suite] then
+      CLIEnv[e.suite] = e.suite
+    end
+    -- import country mirror aliases
+    if e.uri:match("^http://") or e.uri:match("^ftp://") then
+      local hostname = e.uri:match("^[%w]+://(.*)$")
+      hostname = hostname:sub(1, hostname:find("/", 1, true)-1)
+      local country = hostname:match("ftp%.([%w][%w])%.debian%.org")
+      if country and not CLIEnv.mirror[country] then
+        CLIEnv.mirror[country] = e.uri
+      end
+    end
+  end)
+end
+
 local function spec2qtable(str)
   local function dostring(loader, str)
     local t = loader(str)
@@ -18,11 +53,26 @@ local function spec2qtable(str)
     end
     return v
   end
+  local function lloadfile(str)
+    return loadfile(str, "bt", CLIEnv)
+  end
+  local function lloadstring(str)
+    return load(str, "=(load)", "t", CLIEnv)
+  end 
   if str:sub(1,1)=="@" then
     local str = str:sub(2,-1)
-    return dostring(loadfile, str)
+    return dostring(lloadfile, str)
   else
     local str = string.format("return{%s}", str)
-    return dostring(load, str)
+    return dostring(lloadstring, str)
   end
 end
+
+local function TESTING()
+extend_cli_env("sources.list")
+local qt = spec2qtable("suite=wheezy,uri=mirror.jp")
+print(qt.uri, qt.suite)
+end
+
+TESTING()
+
