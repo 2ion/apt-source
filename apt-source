@@ -4,7 +4,25 @@ local Posix = require "posix"
 local Apt = require "apt"
 local Tx = require "pl.tablex"
 
-local function str2table(str)
+-- suite={"sid", "testing"}
+-- @<filename>
+local function spec2qtable(str)
+  local function dostring(loader, str)
+    local t = loader(str)
+    if not t or type(t)~="function" then
+      return nil
+    end
+    local v = t()
+    if type(v)~="table" then
+      return nil
+    end
+    return v
+  end
+  if str:sub(1,1)=="@" then
+    local str = str:sub(2,-1)
+    return dostring(loadfile, str)
+  else
+    local str = string.format("return{%s}", str)
+    return dostring(load, str)
+  end
 end
-
-
