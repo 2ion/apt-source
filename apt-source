@@ -20,16 +20,7 @@ local CLIEnv = {
 }
 
 local function extend_cli_env(sourcefile)
-  local source = Apt.Source:init(sourcefile)
-  if not source:is_ready() then
-    return nil
-  end
-  source:foreach_do(function (e)
-    -- import suite names
-    if not CLIEnv[e.suite] then
-      CLIEnv[e.suite] = e.suite
-    end
-    -- import country mirror aliases
+  local function import_transport_methods(e)
     if e.uri:match("^http://") or e.uri:match("^ftp://") then
       local hostname = e.uri:match("^[%w]+://(.*)$")
       hostname = hostname:sub(1, hostname:find("/", 1, true)-1)
@@ -38,6 +29,20 @@ local function extend_cli_env(sourcefile)
         CLIEnv.mirror[country] = e.uri
       end
     end
+  end
+
+  local function import_suites(e)
+    if not CLIEnv[e.suite] then
+      CLIEnv[e.suite] = e.suite
+    end
+  end
+
+  local source = Apt.Source:init(sourcefile)
+  if not source:is_ready() then return nil end
+
+  source:foreach_do(function (e)
+    import_suites(e)
+    import_transport_methods(e)
   end)
 end
 
@@ -53,12 +58,15 @@ local function spec2qtable(str)
     end
     return v
   end
+
   local function lloadfile(str)
     return loadfile(str, "bt", CLIEnv)
   end
+
   local function lloadstring(str)
     return load(str, "=(load)", "t", CLIEnv)
   end 
+
   if str:sub(1,1)=="@" then
     local str = str:sub(2,-1)
     return dostring(lloadfile, str)
@@ -69,9 +77,9 @@ local function spec2qtable(str)
 end
 
 local function TESTING()
-extend_cli_env("sources.list")
-local qt = spec2qtable("suite=wheezy,uri=mirror.jp")
-print(qt.uri, qt.suite)
+  extend_cli_env("sources.list")
+  local qt = spec2qtable("suite=wheezy,uri=mirror.jp")
+  print(qt.uri, qt.suite)
 end
 
 TESTING()
