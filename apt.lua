@@ -214,10 +214,18 @@ function APTSource:select(qt)
   for i,e in ipairs(self.entries) do
     local match = false
     for k,v in pairs(qt) do
-      if e[k] and e[k] == v then
-        match = true
-      else
-        match = false
+      if e[k] then
+        if type(v)=="table" then
+          for _,vv in ipairs(v) do
+            if e[k]==vv then
+              match = true
+            end
+          end
+        elseif e[k]==v then
+          match = true
+        else
+          match = false
+        end
       end
     end
     if match then

@@ -4,13 +4,7 @@ local Posix = require "posix"
 local Apt = require "apt"
 local Tx = require "pl.tablex"
 
-local options_long = {
-  { "help", "none", "h" },
-  { "file", "required", "f" },
-  { "disable", "required", "d" },
-  { "enable", "required", "e" }
-}
-local options_short = "hf:d:e:"
+local function str2table(str)
+end
 
-a = Apt.Source:init("./sources.list"):enum()
 
