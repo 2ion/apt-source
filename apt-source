@@ -118,7 +118,13 @@ local ct, qt = nil, nil
 for r, optarg, optind in Posix.getopt(arg, CLIOptions.short,
   CLIOptions.long) do
   if r=='?' then
-    Ut.printf("Error: unknown option -- [%s]\n", arg[optind-1])
+    for _,v in ipairs(CLIOptions.long) do
+      if v[3]==arg[optind-1]:sub(2,-1) then
+        Ut.printf("Missing argument to option: %s\n", arg[optind-1])
+        os.exit(1)
+      end
+    end
+    Ut.printf("Unknown option: %s\n", arg[optind-1])
     os.exit(1)
   elseif r=='h' then
     print(Msg.help)
