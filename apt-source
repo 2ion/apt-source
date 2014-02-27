@@ -4,6 +4,26 @@ local Posix = require "posix"
 local Apt = require "apt"
 local Tx = require "pl.tablex"
 local Sx = require "pl.stringx"
+local Ut = require "pl.utils"
+
+local Msg = {
+  version = "0.1",
+  help = [[apt-source
+Copyright (C) 2014 Jens Oliver John <dev@2ion.de>
+]]
+}
+
+local CLIOptions = {
+  short = "hvmq:c:",
+  long = {
+    { "version", "none", "v" },
+    { "help", "none", "h" },
+    { "modify", "none", "m" },
+    { "select", "none", "s" },
+    { "query-table", "required", "q" },
+    { "change-table", "required", "c" }
+  }
+}
 
 local CLIEnv = {
   sid = "unstable",
@@ -77,10 +97,44 @@ local function spec2qtable(str)
 end
 
 local function TESTING()
+  print("*** TESTING ***")
   extend_cli_env("sources.list")
   local qt = spec2qtable("suite=wheezy,uri=mirror.jp")
   print(qt.uri, qt.suite)
 end
 
-TESTING()
+local function op_idle()
+  return 0
+end
 
+-- TESTING()
+
+-- main ()
+
+local narg = 1
+local op = op_idle
+local ct, qt = nil, nil
+
+for r, optarg, optind in Posix.getopt(arg, CLIOptions.short,
+  CLIOptions.long) do
+  if r=='?' then
+    Ut.printf("Error: unknown option -- [%s]\n", arg[optind-1])
+    os.exit(1)
+  elseif r=='h' then
+    print(Msg.help)
+    os.exit(0)
+  elseif r=='v' then
+    print(Msg.version)
+  elseif r=='m' then
+    print(optarg)
+  elseif r=='q' then
+    qt = spec2qtable(optarg)
+    assert(qt, "Invalid query table")
+  elseif r=='c' then
+    ct = spec2qtable(optarg)
+    assert(ct, "Invalid change table")
+  end
+  li = optind
+end
+
+return op(ct, qt)
