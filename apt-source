@@ -1,6 +1,6 @@
 #!/usr/bin/env luajit
 
-local Posix = require "posix"
+local Px = require "posix"
 local Apt = require "apt"
 local Tx = require "pl.tablex"
 local Sx = require "pl.stringx"
@@ -14,20 +14,21 @@ Copyright (C) 2014 Jens Oliver John <dev@2ion.de>
 }
 
 local CLIOptions = {
-  short = "hvmq:c:",
+  short = "hvmq:c:sr",
   long = {
     { "version", "none", "v" },
     { "help", "none", "h" },
     { "modify", "none", "m" },
     { "select", "none", "s" },
     { "query-table", "required", "q" },
-    { "change-table", "required", "c" }
+    { "change-table", "required", "c" },
+    { "stdout", "none", "r" }
   }
 }
 
 local CLIEnv = {
-  sid = "unstable",
-  unstable = "unstable",
+  sid = "sid",
+  unstable = "sid",
   experimental = "experimental",
   testing = "testing",
   wheezy = "stable",
@@ -107,19 +108,37 @@ local function op_idle()
   return 0
 end
 
--- TESTING()
+local function op_modify()
+  return 0
+end
 
--- main ()
+local function op_select(qt, ct, sources)
+  for _,path in ipairs(sources) do
+    local s = Apt.Source:init(path)
+    if not s or not s:is_ready() then
+      Ut.printf("Could not parse source file: %s\n", path)
+    else
+      s:forsome_do(qt, function (e)
+        print(e:tostring())
+      end)
+    end
+  end
+  return 0
+end
+
+-- main () / CLI
 
 local narg = 1
 local op = op_idle
+local opflags = {}
+local sources = {}
 local ct, qt = nil, nil
 
-for r, optarg, optind in Posix.getopt(arg, CLIOptions.short,
+for r, optarg, optind in Px.getopt(arg, CLIOptions.short,
   CLIOptions.long) do
   if r=='?' then
     for _,v in ipairs(CLIOptions.long) do
-      if v[3]==arg[optind-1]:sub(2,-1) then
+      if v[3]==arg[optind-1]:sub(2,-1) and v[2]~="none" then
         Ut.printf("Missing argument to option: %s\n", arg[optind-1])
         os.exit(1)
       end
@@ -131,16 +150,37 @@ for r, optarg, optind in Posix.getopt(arg, CLIOptions.short,
     os.exit(0)
   elseif r=='v' then
     print(Msg.version)
-  elseif r=='m' then
-    print(optarg)
+    os.exit(0)
   elseif r=='q' then
     qt = spec2qtable(optarg)
     assert(qt, "Invalid query table")
   elseif r=='c' then
     ct = spec2qtable(optarg)
     assert(ct, "Invalid change table")
+  elseif r=='m' then
+    op = op_modify
+  elseif r=='s' then
+    op = op_select
+  elseif r=='r' then
+    opflags.stdout = true
   end
-  li = optind
+  narg = optind
 end
 
-return op(ct, qt)
+if narg > #arg then
+  print("No APT source files specified.")
+  os.exit(0)
+end
+
+for i=narg,#arg do
+  local file = arg[i]
+  if not Px.access(file, "r") then
+    Ut.printf("Omitting source file [%s]: no read permissions or does not exist\n", file)
+  elseif op == op_modify and not Px.access(file, "rw") and not opflags.stdout then
+    Ut.printf("No write permissions to [%s]. Use --stdout to not attempt to overwrite the file\n", file)
+  else
+    table.insert(sources, file)
+  end
+end
+
+os.exit(op(qt, ct, sources))
