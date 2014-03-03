@@ -85,7 +85,7 @@ local function spec2qtable(str)
   end
 
   local function lloadstring(str)
-    return load(str, "=(load)", "t", CLIEnv)
+    return load(str, "=(load)", "bt", CLIEnv)
   end 
 
   if str:sub(1,1)=="@" then
