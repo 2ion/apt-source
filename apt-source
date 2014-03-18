@@ -5,6 +5,7 @@ local Apt = require "apt"
 local Tx = require "pl.tablex"
 local Sx = require "pl.stringx"
 local Ut = require "pl.utils"
+local In = require 'inspect.inspect'
 
 local Msg = {
   version = "0.1",

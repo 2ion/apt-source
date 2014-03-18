@@ -6,6 +6,7 @@
 local APT = {}
 local APTSourceEntry = {}
 local APTSource = {}
+local Inspect = require 'inspect.inspect'
 
 function APTSourceEntry:new(s_type, t_options,
   s_uri, s_suite, t_components)
@@ -218,29 +219,32 @@ function APTSource:path()
 end
 
 function APTSource:select(qt)
-  local t = {}
-  for i,e in ipairs(self.entries) do
-    local match = false
-    for k,v in pairs(qt) do
-      if e[k] then
-        if type(v)=="table" then
-          for _,vv in ipairs(v) do
-            if e[k]==vv then
-              match = true
-            end
+  local s = {}
+  for _,e in ipairs(self.entries) do
+    local matches = false
+    for qk,qv in pairs(qt) do
+      if not e[qk] then break end
+      if type(qv) == "table" then
+        local ormatch = false
+        for _,qvv in ipairs(qv) do
+          if e[qk] == qvv then
+            ormatch = true
           end
-        elseif e[k]==v then
-          match = true
-        else
-          match = false
+        end
+        if ormatch then
+          matches = true
+        end
+      else
+        if e[qk] == qv then
+          matches = true
         end
       end
     end
-    if match then
-      table.insert(t, e)
+    if matches then
+      table.insert(s, e)
     end
   end
-  return t
+  return s
 end
 
 function APTSource:forsome_change(qt, ct)
