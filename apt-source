@@ -39,6 +39,9 @@ Usage:
   applied to each APT source file in the file list.
 
 Commands:
+  --add, -A
+      Use the specifications in the change table to
+      create a new source entry.
   --select, -S
       Select source entries using the criteria in the
       query table. The source file will be re-written
@@ -60,11 +63,11 @@ Options:
       A Lua table with key-value pairs by which source
       entries will be selected. The table is to be
       written without the outer curly braces and may
-      have the keys uri, suite, active, components. The
-      values of these keys may be tables in which case
-      the query will be OR'd, ie. at least one element
-      in the list must match for a source entry to be
-      selected.
+      have the keys type, options, uri, suite, active,
+      components. The values of these keys may be tables
+      in which case the query will be OR'd, ie. at least
+      one element in the list must match for a source
+      entry to be selected.
   --change-table CT, -c CT
       Like --query-table, but specifies the changes to
       be applied to a source entry.
