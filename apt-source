@@ -39,18 +39,18 @@ Usage:
   applied to each APT source file in the file list.
 
 Commands:
-  --select, -s  
+  --select, -S
       Select source entries using the criteria in the
       query table. The source file will be re-written
       using only the selected entries unless --stdout
       is present.
-  --modify, -m 
+  --modify, -M
       Select source entries using the criteria in the
       query table and modify them using the specific-
       ation in the change table. The changes will be
       written to the source file unless --stdout is
       present.
-  --clean, -c
+  --clean, -C
       Parse the source file and re-write it without
       changing anything. Overwrites the source file
       unless --stdout is present.
