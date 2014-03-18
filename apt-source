@@ -29,10 +29,15 @@ local In = require 'inspect.inspect'
 
 local Msg = {
   version = "0.5",
-  help = [[Usage:
+  help = [[
+apt-source - CLI for manipulating APT package sources
+Copyright (C) 2014 Jens Oliver John <dev@2ion.de>
+
+Usage:
   apt-source <command> [options] [--] <APT source files>
   Any command and set of options will be separateply
   applied to each APT source file in the file list.
+
 Commands:
   --select, -s  
       Select source entries using the criteria in the
@@ -50,12 +55,13 @@ Commands:
       Parse the source file and re-write it without
       changing anything. Overwrites the source file
       unless --stdout is present.
+
 Options:
   --query-table QT, -q QT
       A Lua table with key-value pairs by which source
       entries will be selected. The table is to be
-      written without the outer curly braces and may have
-      the keys uri, suite, active, components. The
+      written without the outer curly braces and may
+      have the keys uri, suite, active, components. The
       values of these keys may be tables in which case
       the query will be OR'd, ie. at least one element
       in the list must match for a source entry to be

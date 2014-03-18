@@ -1,5 +1,48 @@
-Command line interface to Debian APT source listings, and directories of
-them.
+apt-source - CLI for manipulating APT package sources
+Copyright (C) 2014 Jens Oliver John <dev@2ion.de>
 
-ATM this is under heavy development, but the core library is already
-usable. You have to wait for the CLI, though ^^
+Usage:
+  apt-source <command> [options] [--] <APT source files>
+  Any command and set of options will be separateply
+  applied to each APT source file in the file list.
+
+Commands:
+  --select, -s  
+      Select source entries using the criteria in the
+      query table. The source file will be re-written
+      using only the selected entries unless --stdout
+      is present.
+
+  --modify, -m 
+      Select source entries using the criteria in the
+      query table and modify them using the specific-
+      ation in the change table. The changes will be
+      written to the source file unless --stdout is
+      present.
+  --clean, -c
+      Parse the source file and re-write it without
+      changing anything. Overwrites the source file
+      unless --stdout is present.
+
+Options:
+  --query-table QT, -q QT
+      A Lua table with key-value pairs by which source
+      entries will be selected. The table is to be
+      written without the outer curly braces and may
+      have the keys uri, suite, active, components. The
+      values of these keys may be tables in which case
+      the query will be OR'd, ie. at least one element
+      in the list must match for a source entry to be
+      selected.
+  --change-table CT, -c CT
+      Like --query-table, but specifies the changes to
+      be applied to a source entry.
+  --stdout, -r
+      For commands that would overwrite a source file,
+      write to stdout instead. (Read-only mode).
+  --help, -h
+      Output this message and exit.
+  --version, -v
+      Output the program version and exit.
+
+Please refer to the man page for details and usage examples.
