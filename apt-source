@@ -80,16 +80,16 @@ Please refer to the man page for details and usage examples.]]
 }
 
 local CLIOptions = {
-short = "hvmq:c:srp",
+short = "SMCc:vhq:r",
 long = {
   { "version", "none", "v" },
   { "help", "none", "h" },
-  { "modify", "none", "m" },
-  { "select", "none", "s" },
+  { "modify", "none", "M" },
+  { "select", "none", "S" },
   { "query-table", "required", "q" },
   { "change-table", "required", "c" },
   { "stdout", "none", "r" },
-  { "clean", "none", "c" }
+  { "clean", "none", "C" }
 }
 }
 
@@ -225,31 +225,31 @@ return 0
 end
 
 local function op_select(qt, ct, sources, opflags)
-for _,path in ipairs(sources) do
-  local s = Apt.Source:init(path)
-  if not s or not s:is_ready() then
-    Ut.printf("Could not parse source file: %s\n", path)
-  else
-    if write(path, s, opflags, qt) ~= 0 then
-      Ut.printf("Error when writing to file: %s\n", path)
+  for _,path in ipairs(sources) do
+    local s = Apt.Source:init(path)
+    if not s or not s:is_ready() then
+      Ut.printf("Could not parse source file: %s\n", path)
+    else
+      if write(path, s, opflags, qt) ~= 0 then
+        Ut.printf("Error when writing to file: %s\n", path)
+      end
     end
   end
-end
-return 0
+  return 0
 end
 
 local function op_clean(qt, ct, sources, opflags)
-for _,path in ipairs(sources) do
-  local s = Apt.Source:init(path)
-  if not s or not s:is_ready() then
-    Ut.printf("Could not parse source file: %s\n", path)
-  else
-    if write(path, s, opflags) ~= 0 then
-      Ut.printf("Error when writing to file: %s\n", path)
+  for _,path in ipairs(sources) do
+    local s = Apt.Source:init(path)
+    if not s or not s:is_ready() then
+      Ut.printf("Could not parse source file: %s\n", path)
+    else
+      if write(path, s, opflags) ~= 0 then
+        Ut.printf("Error when writing to file: %s\n", path)
+      end
     end
   end
-end
-return 0
+  return 0
 end
 
 -- main ()
@@ -271,8 +271,6 @@ if r=='?' then
   end
   Ut.printf("Unknown option: %s\n", arg[optind-1])
   os.exit(1)
-elseif r=='c' then
-  op = op_clean
 elseif r=='h' then
   print(Msg.help)
   os.exit(0)
@@ -285,14 +283,16 @@ elseif r=='q' then
 elseif r=='c' then
   ct = spec2qtable(optarg)
   assert(ct, "Invalid change table")
-elseif r=='m' then
+elseif r=='M' then
   op = op_modify
-elseif r=='s' then
+elseif r=='S' then
   op = op_select
+elseif r=='C' then
+  op = op_clean
 elseif r=='r' then
   opflags.stdout = true
 end
-narg = optind
+  narg = optind
 end
 
 if narg > #arg then
