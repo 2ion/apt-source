@@ -16,6 +16,8 @@
 
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+  This project is being maintained at: <https://github.com/2ion/apt-source>.
 --]]
 
 local Px = require "posix"
@@ -26,37 +28,87 @@ local Ut = require "pl.utils"
 local In = require 'inspect.inspect'
 
 local Msg = {
-  version = "0.1",
-  help = [[apt-source
-Copyright (C) 2014 Jens Oliver John <dev@2ion.de>
-]]
+  version = "0.5",
+  help = [[Usage:
+  apt-source <command> [options] [--] <APT source files>
+  Any command and set of options will be separateply
+  applied to each APT source file in the file list.
+Commands:
+  --select, -s  
+      Select source entries using the criteria in the
+      query table. The source file will be re-written
+      using only the selected entries unless --stdout
+      is present.
+
+  --modify, -m 
+      Select source entries using the criteria in the
+      query table and modify them using the specific-
+      ation in the change table. The changes will be
+      written to the source file unless --stdout is
+      present.
+  --clean, -c
+      Parse the source file and re-write it without
+      changing anything. Overwrites the source file
+      unless --stdout is present.
+Options:
+  --query-table QT, -q QT
+      A Lua table with key-value pairs by which source
+      entries will be selected. The table is to be
+      written without the outer curly braces and may have
+      the keys uri, suite, active, components. The
+      values of these keys may be tables in which case
+      the query will be OR'd, ie. at least one element
+      in the list must match for a source entry to be
+      selected.
+  --change-table CT, -c CT
+      Like --query-table, but specifies the changes to
+      be applied to a source entry.
+  --stdout, -r
+      For commands that would overwrite a source file,
+      write to stdout instead. (Read-only mode).
+  --help, -h
+      Output this message and exit.
+  --version, -v
+      Output the program version and exit.
+
+Please refer to the man page for details and usage examples.]]
 }
 
 local CLIOptions = {
-  short = "hvmq:c:srp",
-  long = {
-    { "version", "none", "v" },
-    { "help", "none", "h" },
-    { "modify", "none", "m" },
-    { "select", "none", "s" },
-    { "query-table", "required", "q" },
-    { "change-table", "required", "c" },
-    { "stdout", "none", "r" },
-    { "clean", "none", "c" }
-  }
+short = "hvmq:c:srp",
+long = {
+  { "version", "none", "v" },
+  { "help", "none", "h" },
+  { "modify", "none", "m" },
+  { "select", "none", "s" },
+  { "query-table", "required", "q" },
+  { "change-table", "required", "c" },
+  { "stdout", "none", "r" },
+  { "clean", "none", "c" }
+}
 }
 
 local CLIEnv = {
+  -- sid
   sid = "sid",
   unstable = "sid",
+  -- experimental
   experimental = "experimental",
+  -- testing
+  jessie = "testing",
   testing = "testing",
+  -- stable
   wheezy = "stable",
   stable = "stable",
-  jessie = "testing",
-  ["non-free"] = "non-free",
+  ["wheezy_backports"] = "wheezy-backports",
+  -- oldstable
+  squeeze = "oldstable",
+  oldstable = "oldstable",
+  -- components
+  ["non_free"] = "non-free",
   contrib = "contrib",
   main = "main",
+  -- 
   mirror = {}
 }
 
@@ -88,33 +140,33 @@ local function extend_cli_env(sourcefile)
 end
 
 local function spec2qtable(str)
-  local function dostring(loader, str)
-    local t = loader(str)
-    if not t or type(t)~="function" then
-      return nil
-    end
-    local v = t()
-    if type(v)~="table" then
-      return nil
-    end
-    return v
+local function dostring(loader, str)
+  local t = loader(str)
+  if not t or type(t)~="function" then
+    return nil
   end
-
-  local function lloadfile(str)
-    return loadfile(str, "bt", CLIEnv)
+  local v = t()
+  if type(v)~="table" then
+    return nil
   end
+  return v
+end
 
-  local function lloadstring(str)
-    return load(str, "=(load)", "bt", CLIEnv)
-  end 
+local function lloadfile(str)
+  return loadfile(str, "bt", CLIEnv)
+end
 
-  if str:sub(1,1)=="@" then
-    local str = str:sub(2,-1)
-    return dostring(lloadfile, str)
-  else
-    local str = string.format("return{%s}", str)
-    return dostring(lloadstring, str)
-  end
+local function lloadstring(str)
+  return load(str, "=(load)", "bt", CLIEnv)
+end 
+
+if str:sub(1,1)=="@" then
+  local str = str:sub(2,-1)
+  return dostring(lloadfile, str)
+else
+  local str = string.format("return{%s}", str)
+  return dostring(lloadstring, str)
+end
 end
 
 local function TESTING()
@@ -124,7 +176,7 @@ local function TESTING()
   print(qt.uri, qt.suite)
 end
 
-local function write(file, source, opflags)
+local function write(file, source, opflags, qt)
   assert(file and source, "$file or $source are nil")
   local h
   if opflags.stdout then
@@ -136,57 +188,63 @@ local function write(file, source, opflags)
     Ut.printf("Could not open file for writing: %s\n", file)
     return -1
   end
-  source:foreach_do(function (e)
-    h:write(string.format("%s\n", e:tostring()))
-  end)
+  if qt then
+    source:forsome_do(qt, function (e)
+      h:write(string.format("%s\n", e:tostring()))
+    end)
+  else
+    source:foreach_do(function (e)
+      h:write(string.format("%s\n", e:tostring()))
+    end)
+  end
   h:close()
   return 0
 end
 
 local function op_idle()
-  return 0
+return 0
 end
 
 local function op_modify(qt, ct, sources, opflags)
-  for _,path in ipairs(sources) do
-    local s = Apt.Source:init(path)
-    if not s or not s:is_ready() then
-      Ut.printf("Could not parse source file: %s\n", path)
-    else
-      s:forsome_change(qt, ct, function (e)
-        print(e:tostring())
-      end)
-    end
+for _,path in ipairs(sources) do
+  local s = Apt.Source:init(path)
+  if not s or not s:is_ready() then
+    Ut.printf("Could not parse source file: %s\n", path)
+  else
+    s:forsome_change(qt, ct, function (e)
+      print(e:tostring())
+    end)
   end
-  return 0
+end
+return 0
 end
 
 local function op_select(qt, ct, sources, opflags)
-  for _,path in ipairs(sources) do
-    local s = Apt.Source:init(path)
-    if not s or not s:is_ready() then
-      Ut.printf("Could not parse source file: %s\n", path)
-    else
-      s:forsome_do(qt, function (e)
-        print(e:tostring())
-      end)
+for _,path in ipairs(sources) do
+  local s = Apt.Source:init(path)
+  if not s or not s:is_ready() then
+    Ut.printf("Could not parse source file: %s\n", path)
+  else
+    if write(path, s, opflags, qt) ~= 0 then
+      Ut.printf("Error when writing to file: %s\n", path)
     end
   end
-  return 0
+end
+return 0
 end
 
 local function op_clean(qt, ct, sources, opflags)
-  for _,path in ipairs(sources) do
-    local s = Apt.Source:init(path)
-    if not s or not s:is_ready() then
-      Ut.printf("Could not parse source file: %s\n", path)
-    else
-      if write(path, s, opflags) ~= 0 then
-        Ut.printf("Error when writing to file: %s\n", path)
-      end
+for _,path in ipairs(sources) do
+  local s = Apt.Source:init(path)
+  if not s or not s:is_ready() then
+    Ut.printf("Could not parse source file: %s\n", path)
+  else
+    if write(path, s, opflags) ~= 0 then
+      Ut.printf("Error when writing to file: %s\n", path)
     end
   end
-  return 0
+end
+return 0
 end
 
 -- main ()
@@ -198,54 +256,54 @@ local sources = {}
 local ct, qt = nil, nil
 
 for r, optarg, optind in Px.getopt(arg, CLIOptions.short,
-  CLIOptions.long) do
-  if r=='?' then
-    for _,v in ipairs(CLIOptions.long) do
-      if v[3]==arg[optind-1]:sub(2,-1) and v[2]~="none" then
-        Ut.printf("Missing argument to option: %s\n", arg[optind-1])
-        os.exit(1)
-      end
+CLIOptions.long) do
+if r=='?' then
+  for _,v in ipairs(CLIOptions.long) do
+    if v[3]==arg[optind-1]:sub(2,-1) and v[2]~="none" then
+      Ut.printf("Missing argument to option: %s\n", arg[optind-1])
+      os.exit(1)
     end
-    Ut.printf("Unknown option: %s\n", arg[optind-1])
-    os.exit(1)
-  elseif r=='c' then
-    op = op_clean
-  elseif r=='h' then
-    print(Msg.help)
-    os.exit(0)
-  elseif r=='v' then
-    print(Msg.version)
-    os.exit(0)
-  elseif r=='q' then
-    qt = spec2qtable(optarg)
-    assert(qt, "Invalid query table")
-  elseif r=='c' then
-    ct = spec2qtable(optarg)
-    assert(ct, "Invalid change table")
-  elseif r=='m' then
-    op = op_modify
-  elseif r=='s' then
-    op = op_select
-  elseif r=='r' then
-    opflags.stdout = true
   end
-  narg = optind
+  Ut.printf("Unknown option: %s\n", arg[optind-1])
+  os.exit(1)
+elseif r=='c' then
+  op = op_clean
+elseif r=='h' then
+  print(Msg.help)
+  os.exit(0)
+elseif r=='v' then
+  print(Msg.version)
+  os.exit(0)
+elseif r=='q' then
+  qt = spec2qtable(optarg)
+  assert(qt, "Invalid query table")
+elseif r=='c' then
+  ct = spec2qtable(optarg)
+  assert(ct, "Invalid change table")
+elseif r=='m' then
+  op = op_modify
+elseif r=='s' then
+  op = op_select
+elseif r=='r' then
+  opflags.stdout = true
+end
+narg = optind
 end
 
 if narg > #arg then
-  print("No APT source files specified.")
-  os.exit(0)
+print("No APT source files specified.")
+os.exit(0)
 end
 
 for i=narg,#arg do
-  local file = arg[i]
-  if not Px.access(file, "r") then
-    Ut.printf("Omitting source file [%s]: no read permissions or does not exist\n", file)
-  elseif op == op_modify and not Px.access(file, "rw") and not opflags.stdout then
-    Ut.printf("No write permissions to [%s]. Use --stdout to not attempt to overwrite the file\n", file)
-  else
-    table.insert(sources, file)
-  end
+local file = arg[i]
+if not Px.access(file, "r") then
+  Ut.printf("Omitting source file [%s]: no read permissions or does not exist\n", file)
+elseif op == op_modify and not Px.access(file, "rw") and not opflags.stdout then
+  Ut.printf("No write permissions to [%s]. Use --stdout to not attempt to overwrite the file\n", file)
+else
+  table.insert(sources, file)
+end
 end
 
 os.exit(op(qt, ct, sources, opflags))
