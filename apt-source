@@ -44,7 +44,6 @@ Commands:
       query table. The source file will be re-written
       using only the selected entries unless --stdout
       is present.
-
   --modify, -m 
       Select source entries using the criteria in the
       query table and modify them using the specific-

@@ -1,0 +1,22 @@
+% apt-source(3)
+% Jens Oliver John <dev@2ion.de>
+% Tue  18 Mar 2014
+
+# NAME
+
+apt-source - a CLI for manipulating APT package sources
+
+# SYNPOSIS
+
+__apt-source__ _COMMAND_ [_OPTIONS_] [_--_] _FILE-LIST_
+
+# DESCRIPTION
+
+apt-source is a program for performing selective operations on entries
+in APT source files as described in __sources.list__(5). Entries can be
+selected, changed and written back to the file. It was created to
+simplify the management of APT source listings.
+
+# SUPPORTED FILE FORMAT
+
+apt-source doesn't support source listings that use the RFC 822 style format.

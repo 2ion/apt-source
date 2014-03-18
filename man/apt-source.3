@@ -1,0 +1,20 @@
+.TH "apt\-source" "3" "Tue 18 Mar 2014" "" ""
+.SH NAME
+.PP
+apt\-source \- a CLI for manipulating APT package sources
+.SH SYNPOSIS
+.PP
+\f[B]apt\-source\f[] \f[I]COMMAND\f[] [\f[I]OPTIONS\f[]] [\f[I]\-\-\f[]]
+\f[I]FILE\-LIST\f[]
+.SH DESCRIPTION
+.PP
+apt\-source is a program for performing selective operations on entries
+in APT source files as described in \f[B]sources.list\f[](5).
+Entries can be selected, changed and written back to the file.
+It was created to simplify the management of APT source listings.
+.SH SUPPORTED FILE FORMAT
+.PP
+apt\-source doesn\[aq]t support source listings that use the RFC 822
+style format.
+.SH AUTHORS
+Jens Oliver John <dev@2ion.de>.
