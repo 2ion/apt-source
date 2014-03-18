@@ -247,9 +247,12 @@ function APTSource:select(qt)
   return s
 end
 
-function APTSource:forsome_change(qt, ct)
+function APTSource:forsome_change(qt, ct, f)
   local sel = self:select(qt)
-  for _,e in ipairs(sel) do e:change(ct) end
+  for _,e in ipairs(sel) do
+    e:change(ct)
+    e:apply(f)
+  end
   return self
 end
 
