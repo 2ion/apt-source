@@ -268,7 +268,7 @@ function APTSource:forsome_change(qt, ct, f)
   local sel = self:select(qt)
   for _,e in ipairs(sel) do
     e:change(ct)
-    e:apply(f)
+    if f then e:apply(f) end
   end
   return self
 end
